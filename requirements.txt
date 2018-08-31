@@ -1,0 +1,13 @@
+# This list assumes an Ubuntu 16.04 Installation with Keras 2.2.2, using Tensorflow 1.10 as backend, and required dependencies (See below)
+# The Python version is assumed to be 3.6, as this is the latest version compatible with Keras 2.2.2 
+# Other libraries are included as necessary for data pre-processing and graph visualization. 
+
+numpy >= 1.15.1  # Dependency for all above libraries
+scipy >= 1.1.0  # Another dependency
+matplotlib >= 2.2.3 # Visualization 
+scikit-learn >= 0.19.2 # Various metric functions 
+pillow >= 5.2 # To create image collages
+opencv-python >= 3.4.2 # Image Preprocessing
+h5py >= 2.7 # Saving and reading data in HDF5 format
+tensorflow-gpu >= 1.10.1 # Backend for Keras
+keras >= 2.2.2 # API for U-Net Model
