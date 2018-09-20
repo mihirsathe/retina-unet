@@ -8,7 +8,7 @@
 
 #Python
 import numpy as np
-import ConfigParser
+import configparser as ConfigParser
 from matplotlib import pyplot as plt
 #Keras
 from keras.models import model_from_json
@@ -36,8 +36,8 @@ from extract_patches import get_data_testing_overlap
 from pre_processing import my_PreProc
 
 
-#========= CONFIG FILE TO READ FROM =======
-config = ConfigParser.RawConfigParser()
+#config file to read from
+config = ConfigParser()
 config.read('configuration.txt')
 #===========================================
 #run the training on invariant or local
@@ -52,29 +52,22 @@ full_img_width = test_imgs_orig.shape[3]
 DRIVE_test_border_masks = path_data + config.get('data paths', 'test_border_masks')
 test_border_masks = load_hdf5(DRIVE_test_border_masks)
 # dimension of the patches
-patch_height = int(config.get('data attributes', 'patch_height'))
-patch_width = int(config.get('data attributes', 'patch_width'))
+patch_height = config.getint('data attributes', 'patch_height')
+patch_width = config.getint('data attributes', 'patch_width')
 #the stride in case output with average
-stride_height = int(config.get('testing settings', 'stride_height'))
-stride_width = int(config.get('testing settings', 'stride_width'))
+stride_height = config.getint('testing settings', 'stride_height')
+stride_width = config.getint('testing settings', 'stride_width')
 assert (stride_height < patch_height and stride_width < patch_width)
 #model name
 name_experiment = config.get('experiment name', 'name')
 path_experiment = './' +name_experiment +'/'
 #N full images to be predicted
-Imgs_to_test = int(config.get('testing settings', 'full_images_to_test'))
-#Grouping of the predicted images
-N_visual = int(config.get('testing settings', 'N_group_visual'))
+Imgs_to_test = config.getint('testing settings', 'full_images_to_test')
+#Grouping of the predicted image
+N_visual = config.getint('testing settings', 'N_group_visual')
 #====== average mode ===========
 average_mode = config.getboolean('testing settings', 'average_mode')
 
-
-# #ground truth
-# gtruth= path_data + config.get('data paths', 'test_groundTruth')
-# img_truth= load_hdf5(gtruth)
-# visualize(group_images(test_imgs_orig[0:20,:,:,:],5),'original')#.show()
-# visualize(group_images(test_border_masks[0:20,:,:,:],5),'borders')#.show()
-# visualize(group_images(img_truth[0:20,:,:,:],5),'gtruth')#.show()
 
 
 
@@ -88,7 +81,7 @@ if average_mode == True:
     patches_imgs_test, new_height, new_width, masks_test = get_data_testing_overlap(
         DRIVE_test_imgs_original = DRIVE_test_imgs_original,  #original
         DRIVE_test_groudTruth = path_data + config.get('data paths', 'test_groundTruth'),  #masks
-        Imgs_to_test = int(config.get('testing settings', 'full_images_to_test')),
+        Imgs_to_test = config.getint('testing settings', 'full_images_to_test'),
         patch_height = patch_height,
         patch_width = patch_width,
         stride_height = stride_height,
@@ -98,7 +91,7 @@ else:
     patches_imgs_test, patches_masks_test = get_data_testing(
         DRIVE_test_imgs_original = DRIVE_test_imgs_original,  #original
         DRIVE_test_groudTruth = path_data + config.get('data paths', 'test_groundTruth'),  #masks
-        Imgs_to_test = int(config.get('testing settings', 'full_images_to_test')),
+        Imgs_to_test = config.getint('testing settings', 'full_images_to_test'),
         patch_height = patch_height,
         patch_width = patch_width,
     )
@@ -112,8 +105,7 @@ model = model_from_json(open(path_experiment+name_experiment +'_architecture.jso
 model.load_weights(path_experiment+name_experiment + '_'+best_last+'_weights.h5')
 #Calculate the predictions
 predictions = model.predict(patches_imgs_test, batch_size=32, verbose=2)
-print "predicted images size :"
-print predictions.shape
+print ("predicted images size :" + str(predictions.shape))
 
 #===== Convert the prediction arrays in corresponding images
 pred_patches = pred_to_imgs(predictions, patch_height, patch_width, "original")
@@ -138,12 +130,12 @@ kill_border(pred_imgs, test_border_masks)  #DRIVE MASK  #only for visualization
 orig_imgs = orig_imgs[:,:,0:full_img_height,0:full_img_width]
 pred_imgs = pred_imgs[:,:,0:full_img_height,0:full_img_width]
 gtruth_masks = gtruth_masks[:,:,0:full_img_height,0:full_img_width]
-print "Orig imgs shape: " +str(orig_imgs.shape)
-print "pred imgs shape: " +str(pred_imgs.shape)
-print "Gtruth imgs shape: " +str(gtruth_masks.shape)
-visualize(group_images(orig_imgs,N_visual),path_experiment+"all_originals")#.show()
-visualize(group_images(pred_imgs,N_visual),path_experiment+"all_predictions")#.show()
-visualize(group_images(gtruth_masks,N_visual),path_experiment+"all_groundTruths")#.show()
+print ("Orig imgs shape: " +str(orig_imgs.shape))
+print ("pred imgs shape: " +str(pred_imgs.shape))
+print ("Gtruth imgs shape: " +str(gtruth_masks.shape))
+visualize(group_images(orig_imgs,N_visual),path_experiment+"all_originals")
+visualize(group_images(pred_imgs,N_visual),path_experiment+"all_predictions")
+visualize(group_images(gtruth_masks,N_visual),path_experiment+"all_groundTruths")
 #visualize results comparing mask and prediction:
 assert (orig_imgs.shape[0]==pred_imgs.shape[0] and orig_imgs.shape[0]==gtruth_masks.shape[0])
 N_predicted = orig_imgs.shape[0]
@@ -158,18 +150,18 @@ for i in range(int(N_predicted/group)):
 
 
 #====== Evaluate the results
-print "\n\n========  Evaluate the results ======================="
+print ("\n\n========  Evaluate the results =======================")
 #predictions only inside the FOV
 y_scores, y_true = pred_only_FOV(pred_imgs,gtruth_masks, test_border_masks)  #returns data only inside the FOV
-print "Calculating results only inside the FOV:"
-print "y scores pixels: " +str(y_scores.shape[0]) +" (radius 270: 270*270*3.14==228906), including background around retina: " +str(pred_imgs.shape[0]*pred_imgs.shape[2]*pred_imgs.shape[3]) +" (584*565==329960)"
-print "y true pixels: " +str(y_true.shape[0]) +" (radius 270: 270*270*3.14==228906), including background around retina: " +str(gtruth_masks.shape[2]*gtruth_masks.shape[3]*gtruth_masks.shape[0])+" (584*565==329960)"
+print ("Calculating results only inside the FOV:")
+print ("y scores pixels: " +str(y_scores.shape[0]) +" (radius 270: 270*270*3.14==228906), including background around retina: " +str(pred_imgs.shape[0]*pred_imgs.shape[2]*pred_imgs.shape[3]) +" (584*565==329960)")
+print ("y true pixels: " +str(y_true.shape[0]) +" (radius 270: 270*270*3.14==228906), including background around retina: " +str(gtruth_masks.shape[2]*gtruth_masks.shape[3]*gtruth_masks.shape[0])+" (584*565==329960)")
 
 #Area under the ROC curve
 fpr, tpr, thresholds = roc_curve((y_true), y_scores)
 AUC_ROC = roc_auc_score(y_true, y_scores)
 # test_integral = np.trapz(tpr,fpr) #trapz is numpy integration
-print "\nArea under the ROC curve: " +str(AUC_ROC)
+print ("\nArea under the ROC curve: " +str(AUC_ROC))
 roc_curve =plt.figure()
 plt.plot(fpr,tpr,'-',label='Area Under the Curve (AUC = %0.4f)' % AUC_ROC)
 plt.title('ROC curve')
@@ -183,7 +175,7 @@ precision, recall, thresholds = precision_recall_curve(y_true, y_scores)
 precision = np.fliplr([precision])[0]  #so the array is increasing (you won't get negative AUC)
 recall = np.fliplr([recall])[0]  #so the array is increasing (you won't get negative AUC)
 AUC_prec_rec = np.trapz(precision,recall)
-print "\nArea under Precision-Recall curve: " +str(AUC_prec_rec)
+print ("\nArea under Precision-Recall curve: " +str(AUC_prec_rec))
 prec_rec_curve = plt.figure()
 plt.plot(recall,precision,'-',label='Area Under the Curve (AUC = %0.4f)' % AUC_prec_rec)
 plt.title('Precision - Recall curve')
@@ -194,7 +186,7 @@ plt.savefig(path_experiment+"Precision_recall.png")
 
 #Confusion matrix
 threshold_confusion = 0.5
-print "\nConfusion matrix:  Custom threshold (for positive) of " +str(threshold_confusion)
+print ("\nConfusion matrix:  Custom threshold (for positive) of " +str(threshold_confusion))
 y_pred = np.empty((y_scores.shape[0]))
 for i in range(y_scores.shape[0]):
     if y_scores[i]>=threshold_confusion:
@@ -202,31 +194,31 @@ for i in range(y_scores.shape[0]):
     else:
         y_pred[i]=0
 confusion = confusion_matrix(y_true, y_pred)
-print confusion
+print (confusion)
 accuracy = 0
 if float(np.sum(confusion))!=0:
     accuracy = float(confusion[0,0]+confusion[1,1])/float(np.sum(confusion))
-print "Global Accuracy: " +str(accuracy)
+print ("Global Accuracy: " +str(accuracy))
 specificity = 0
 if float(confusion[0,0]+confusion[0,1])!=0:
     specificity = float(confusion[0,0])/float(confusion[0,0]+confusion[0,1])
-print "Specificity: " +str(specificity)
+print ("Specificity: " +str(specificity))
 sensitivity = 0
 if float(confusion[1,1]+confusion[1,0])!=0:
     sensitivity = float(confusion[1,1])/float(confusion[1,1]+confusion[1,0])
-print "Sensitivity: " +str(sensitivity)
+print ("Sensitivity: " +str(sensitivity))
 precision = 0
 if float(confusion[1,1]+confusion[0,1])!=0:
     precision = float(confusion[1,1])/float(confusion[1,1]+confusion[0,1])
-print "Precision: " +str(precision)
+print ("Precision: " +str(precision))
 
 #Jaccard similarity index
 jaccard_index = jaccard_similarity_score(y_true, y_pred, normalize=True)
-print "\nJaccard similarity score: " +str(jaccard_index)
+print ("\nJaccard similarity score: " +str(jaccard_index))
 
 #F1 score
 F1_score = f1_score(y_true, y_pred, labels=None, average='binary', sample_weight=None)
-print "\nF1 score (F-measure): " +str(F1_score)
+print ("\nF1 score (F-measure): " +str(F1_score))
 
 #Save the results
 file_perf = open(path_experiment+'performances.txt', 'w')
