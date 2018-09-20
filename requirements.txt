@@ -1,4 +1,4 @@
-# This list assumes an Ubuntu 16.04 Installation with Keras 2.2.2, using Tensorflow 1.10 as backend, and required dependencies (See below)
+# This list assumes an Ubuntu 16.04 LTS Installation with Keras 2.2.2, using Tensorflow 1.10 as backend, and required dependencies (See below)
 # The Python version is assumed to be 3.6, as this is the latest version compatible with Keras 2.2.2 
 # Other libraries are included as necessary for data pre-processing and graph visualization. 
 
