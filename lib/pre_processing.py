@@ -22,7 +22,7 @@ def my_PreProc(data):
     train_imgs = dataset_normalized(train_imgs)
     train_imgs = clahe_equalized(train_imgs)
     train_imgs = adjust_gamma(train_imgs, 1.2)
-    train_imgs = train_imgs / 255.  # reduce to 0-1 range
+    train_imgs = train_imgs / 255  # reduce to 0-1 range
     return train_imgs
 
 
